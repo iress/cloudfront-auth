@@ -1,9 +1,13 @@
+# Cloudfront Auth
+
 [Google Apps (G Suite)](https://developers.google.com/identity/protocols/OpenIDConnect), [Microsoft Azure AD](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code), [GitHub](https://developer.github.com/apps/building-oauth-apps/authorization-options-for-oauth-apps/), [OKTA](https://www.okta.com/), [Auth0](https://auth0.com/), [Centrify](https://centrify.com) authentication for [CloudFront](https://aws.amazon.com/cloudfront/) using [Lambda@Edge](http://docs.aws.amazon.com/lambda/latest/dg/lambda-edge.html). The original use case for `cloudfront-auth` was to serve private S3 content over HTTPS without running a proxy server in EC2 to authenticate requests; but `cloudfront-auth` can be used authenticate requests of any Cloudfront origin configuration.
 
 ## Description
+
 Upon successful authentication, a cookie (named `TOKEN`) with the value of a signed JWT is set and the user redirected back to the originally requested path. Upon each request, Lambda@Edge checks the JWT for validity (signature, expiration date, audience and matching hosted domain) and will redirect the user to configured provider's login when their session has timed out.
 
 ## Usage
+
 If your CloudFront distribution is pointed at a S3 bucket, [configure origin access identity](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html#private-content-creating-oai-console) so S3 objects can be stored with private permissions. (Origin access identity requires the S3 ACL owner be the account owner. Use our [s3-object-owner-monitor](https://github.com/Widen/s3-object-owner-monitor) Lambda function if writing objects across multiple accounts.)
 
 Enable SSL/HTTPS on your CloudFront distribution; AWS Certificate Manager can be used to provision a no-cost certificate.
@@ -11,10 +15,12 @@ Enable SSL/HTTPS on your CloudFront distribution; AWS Certificate Manager can be
 Session duration is defined as the number of hours that the JWT is valid for. After session expiration, cloudfront-auth will redirect the user to the configured provider to re-authenticate. RSA keys are used to sign and validate the JWT.
 
 ## Building
+
 The build script generates either a custom or a generic AWS Lambda deployment package.
 
 ### Custom packages
-```
+
+```bash
 ./build.sh
 ```
 
@@ -24,9 +30,10 @@ If the files `id_rsa` and `id_rsa.pub` do not exist they will be automatically g
 
 ### Generic packages
 
-```
+```bash
 ./build.sh package
 ```
+
 When `package` is set to the name of an identity provider, the script builds a generic package for that provider. The Lambda function retrieves its parameters at runtime from the [AWS Systems Manager](https://aws.amazon.com/systems-manager/) Parameter Store and [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/).
 
 Currently the build script supports building generic packages for OKTA Native only. The supported values of `package` are:
@@ -44,7 +51,7 @@ Currently the build script supports building generic packages for OKTA Native on
     1. For **Authorization callback URL** enter your Cloudfront hostname with your preferred path value for the authorization callback. Example: `https://my-cloudfront-site.example.com/_callback`
 1. Execute `./build.sh` in the downloaded directory. NPM will run to download dependencies and a RSA key will be generated.
     1. Choose `Github` as the authorization method and enter the values for Client ID, Client Secret, Redirect URI, Session Duration and Organization
-        -  cloudfront-auth will check that users are a member of the entered Organization.
+        * cloudfront-auth will check that users are a member of the entered Organization.
 1. Upload the resulting `zip` file found in your distribution folder using the AWS Lambda console and jump to the [configuration step](#configure-lambda-and-cloudfront)
 
 ### Google
@@ -71,7 +78,7 @@ Currently the build script supports building generic packages for OKTA Native on
 1. In your Azure portal, go to Azure Active Directory and select **App registrations**
     1. Create a new application registration with an application type of **Web app / api**
     1. Once created, go to your application `Settings -> Keys` and make a new key with your desired duration. Click save and copy the value. This will be your `client_secret`
-    1. Above where you selected `Keys`, go to `Reply URLs` and enter your Cloudfront hostname with your preferred path value for the authorization callback. Example: https://my-cloudfront-site.example.com/_callback
+    1. Above where you selected `Keys`, go to `Reply URLs` and enter your Cloudfront hostname with your preferred path value for the authorization callback. Example: `https://my-cloudfront-site.example.com/_callback`
 1. Execute `./build.sh` in the downloaded directory. NPM will run to download dependencies and a RSA key will be generated.
 1. Choose `Microsoft` as the authorization method and enter the values for [Tenant](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-howto-tenant), Client ID (**Application ID**), Client Secret (**previously created key**), Redirect URI and Session Duration
 1. Select the preferred authentication method
@@ -168,22 +175,26 @@ If deploying a generic package, you also need to:
 
 ## Authorization Method Examples
 
-- [Use Google Groups to authorize users](https://github.com/Widen/cloudfront-auth/wiki/Google-Groups-Setup)
+* [Use Google Groups to authorize users](https://github.com/Widen/cloudfront-auth/wiki/Google-Groups-Setup)
 
-- JSON array of email addresses
+* JSON array of email addresses
 
-    ```
+    ```json
     [ "foo@gmail.com", "bar@gmail.com" ]
     ```
+
 ## Testing
+
 Detailed instructions on testing your function can be found [in the Wiki](https://github.com/Widen/cloudfront-auth/wiki/Debug-&-Test).
 
 ## Build Requirements
- - [npm](https://www.npmjs.com/) ^5.6.0
- - [node](https://nodejs.org/en/) ^10.0
- - [openssl](https://www.openssl.org)
+
+* [npm](https://www.npmjs.com/) ^5.6.0
+* [node](https://nodejs.org/en/) ^10.0
+* [openssl](https://www.openssl.org)
 
 ## Contributing
+
 All contributions are welcome. Please create an issue in order open up communication with the community.
 
 When implementing a new flow or using an already implemented flow, be sure to follow the same style used in `build.js`. The config.json file should have an object for each request made. For example, `openid.index.js` converts config.AUTH_REQUEST and config.TOKEN_REQUEST to querystrings for simplified requests (after adding dynamic variables such as state or nonce). For implementations that are not generic (most), endpoints are hardcoded in to the config (or discovery documents).
