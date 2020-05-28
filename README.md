@@ -146,9 +146,9 @@ Currently the build script supports building generic packages for OKTA Native on
     1. Client Id from the application created in our previous step (can be found at the bottom of the general tab)
     1. Base Url
         1. This is named the 'Org URL' and can be found in the top right of the Dashboard tab.
-1. Execute `./build.sh` in the downloaded directory to build a custom package, or `./build.sh okta_native` to build a generic package. NPM will run to download dependencies.
-    1. If using a custom package, an RSA key will be generated. Choose `OKTA Native` as the authorization method and enter the values for Base URL (Org URL), Client ID, PKCE Code Verifier Length, Redirect URI, and Session Duration.
-    1. If using a generic package, create the following parameters in AWS Systems Manager, where `{name}` is the name that you will give the Lambda authentication function:
+1. Decide on whether you want to use a custom package or a generic package
+    * For a custom package, execute `./build.sh` in the downloaded directory. An RSA key will be generated. Choose `OKTA Native` as the authorization method and enter the values for Base URL (Org URL), Client ID, PKCE Code Verifier Length, Redirect URI, and Session Duration.
+    * For a generic package, execute `./build.sh okta_native` in the downloaded directory. Create the parameters below in the AWS Systems Manager Parameter Store in the `us-east-1` region. Replace `{name}` with the name that you will give the Lambda authentication function.
         * `/{name}/base-url` (e.g. `https://my-org.okta.com`)
         * `/{name}/client-id` (from the OKTA application)
         * `/{name}/domain-name` (e.g. `my-site.cloudfront.net`)
@@ -161,17 +161,21 @@ Currently the build script supports building generic packages for OKTA Native on
 
 See [Manual Deployment](https://github.com/Widen/cloudfront-auth/wiki/Manual-Deployment) __*or*__ [AWS SAM Deployment](https://github.com/Widen/cloudfront-auth/wiki/AWS-SAM-Deployment)
 
-If deploying a generic package, you also need to:
+If deploying a generic package, you also need to follow the steps below in the `us-east-1` region. In these steps, replace `{name}` with the name of the Lambda authentication function you created and `{account_id}` with the AWS Account ID number.
 
+1. Modify the role on the Lambda authentication function to include a policy that:
+    * allows the action `secretsmanager:GetSecretValue` on resource `arn:aws:secretsmanager:us-east-1:{account_id}:secret:{name}/*`
+    * allows the action `ssm:GetParametersByPath` on resource `arn:aws:ssm:us-east-1:{account_id}:parameter/{name}`
 1. Execute `./build.sh rotate_key_pair`
-1. Create a seceret in AWS Secrets Manager named `{name}/key-pair`, where `{name}` is the name of the Lambda authentication function
-1. Create a Lambda rotation fuction with the following configuration:
+1. Create a Lambda rotation function with the following configuration:
     * Function code: Use the `rotate_key_pair.zip` file found in the distributions folder
     * Runtime: **Node.js 10.x** or later
     * Handler: `index.handler`
     * Timeout: 30 sec
-    * Permissions: A role with a policy that allows the `secretsmanager:PutSecretValue` action on the secret resource you created
-1. Enable secret rotation on the secret and associate it with the Lambda rotation fuction
+1. Modify the role on the Lambda rotation function to include a policy that:
+    * allows the action `secretsmanager:PutSecretValue` on resource `arn:aws:secretsmanager:us-east-1:{account_id}:secret:{name}/*`
+1. Create a secret in AWS Secrets Manager named `{name}/key-pair`
+1. Enable secret rotation on the secret and associate it with the Lambda rotation function
 
 ## Authorization Method Examples
 
