@@ -24,5 +24,5 @@ jobs:
 
     - uses: actions/upload-artifact@v2
       with:
-        name: Node.js ${{ matrix.node-version }}
+        name: packages_${{ matrix.node-version }}
         path: distributions/*/*.zip
