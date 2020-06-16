@@ -7,6 +7,8 @@ describe('Rotate key pair', function () {
   describe('handler', function () {
 
     it('should put secret value when step is createSecret', function () {
+      this.timeout(30000);
+
       const putSecretValueSpy = sinon.spy();
       AWS.mock('SecretsManager', 'putSecretValue', putSecretValueSpy);
 
