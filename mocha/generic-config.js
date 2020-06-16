@@ -6,7 +6,8 @@ describe('Generic configuration', function () {
   describe('getConfig', function () {
 
     it('should return an object that has placeholders replaced with values from Parameter Store and Secrets Manager', function (done) {
-      const ssmResponse = {
+
+      AWS.mock('SSM', 'getParametersByPath', {
         Parameters: [
           {
             Name: '/my-website-auth/domain-name',
@@ -17,14 +18,11 @@ describe('Generic configuration', function () {
             Value: '/_callback'
           }
         ]
-      };
+      });
 
-      const secretsManagerResponse = {
+      AWS.mock('SecretsManager', 'getSecretValue', {
         SecretString: JSON.stringify({ 'private-key': 'my-private-key', 'public-key': 'my-public-key' })
-      };
-
-      AWS.mock('SSM', 'getParametersByPath', ssmResponse);
-      AWS.mock('SecretsManager', 'getSecretValue', secretsManagerResponse);
+      });
 
       genericConfig.getConfig('./mocha/generic-config.json', 'us-east-1.my-website-auth', function (err, config) {
         try {

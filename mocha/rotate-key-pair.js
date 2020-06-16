@@ -43,8 +43,8 @@ describe('Rotate key pair', function () {
       // Call Lambda function handler
       const event = {
         Step: 'setSecret',
-        SecretId: 'SecretId',
-        ClientRequestToken: 'ClientRequestToken'
+        SecretId: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:my-website-auth/key-pair-ABCDEF',
+        ClientRequestToken: '123e4567-e89b-12d3-a456-426614174000'
       };
       rotateKeyPair.handler(event);
 
