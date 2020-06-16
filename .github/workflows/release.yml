@@ -21,6 +21,9 @@ jobs:
         with:
           node-version: '10.x'
 
+      - name: Run Mocha tests
+        run: npm run-script mocha
+
       - name: Build okta_native
         run: ./build.sh okta_native
       - name: Build rotate_key_pair

@@ -17,6 +17,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - run: npm run-script mocha
+
     - run: ./build.sh okta_native
     - run: test -f distributions/okta_native/okta_native.zip
     - run: ./build.sh rotate_key_pair
