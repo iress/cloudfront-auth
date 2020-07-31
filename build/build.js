@@ -650,6 +650,7 @@ function zip(files) {
   for (var i = 0; i < files.length; i++) {
     filesString += ' distributions/' + config.DISTRIBUTION + '/' + files[i] + ' ';
   }
+  fs.unlinkSync('distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip');
   shell.exec('zip -q distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip ' + 'package-lock.json package.json -r node_modules');
   shell.exec('zip -q -r -j distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip ' + filesString);
   console.log(colors.green("Done... created Lambda function distributions/" + config.DISTRIBUTION + "/" + config.DISTRIBUTION + ".zip"));
