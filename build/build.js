@@ -10,13 +10,18 @@ var config = { AUTH_REQUEST: {}, TOKEN_REQUEST: {} };
 var oldConfig;
 
 config.DISTRIBUTION = process.argv[2]
+config.SUBDIST = '';
 
 if (config.DISTRIBUTION) {
   config.AUTHN = config.DISTRIBUTION.toUpperCase();
+  config.AUTHZ = process.argv[3];
   shell.mkdir('-p', 'distributions/' + config.DISTRIBUTION);
   switch (config.DISTRIBUTION) {
     case 'okta_native':
       genericOktaConfiguration();
+      break;
+    case 'google':
+      genericGoogleConfiguration();
       break;
     case 'rotate_key_pair':
       buildRotateKeyPair();
@@ -254,56 +259,46 @@ function googleConfiguration() {
     config.TOKEN_REQUEST.redirect_uri = result.REDIRECT_URI;
     config.TOKEN_REQUEST.grant_type = 'authorization_code';
 
-    config.AUTHZ = result.AUTHZ;
-
-    shell.cp('./authn/openid.index.js', './distributions/' + config.DISTRIBUTION + '/index.js');
-    shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
-
-    fs.writeFileSync('distributions/' + config.DISTRIBUTION + '/config.json', JSON.stringify(result, null, 4));
-
     switch (result.AUTHZ) {
       case '1':
-        shell.cp('./authz/google.hosted-domain.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
-        shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
-        writeConfig(config, zip, ['config.json', 'index.js', 'auth.js', 'nonce.js']);
+        config.AUTHZ = 'hosted-domain';
+        buildGoogle(false);
         break;
       case '2':
-        shell.cp('./authz/google.json-email-lookup.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
+        config.AUTHZ = 'email-lookup';
         prompt.start();
         prompt.message = colors.blue(">>>");
         prompt.get({
           properties: {
             JSON_EMAIL_LOOKUP: {
               description: colors.red("JSON email lookup endpoint"),
+              required: true,
               default: R.pathOr('', ['JSON_EMAIL_LOOKUP'], oldConfig)
             }
           }
         }, function (err, result) {
           config.JSON_EMAIL_LOOKUP = result.JSON_EMAIL_LOOKUP;
-          writeConfig(config, zip, ['config.json', 'index.js', 'auth.js', 'nonce.js']);
+          buildGoogle(false);
         });
         break;
       case '3':
+        config.AUTHZ='groups-lookup';
         prompt.start();
         prompt.message = colors.blue(">>>");
         prompt.get({
           properties: {
+            SERVICE_ACCOUNT_EMAIL: {
+              description: colors.red("Service Account Email"),
+              required: true,
+              default: R.pathOr('', ['SERVICE_ACCOUNT_EMAIL'], oldConfig)
+            },
             MOVE: {
               message: colors.red("Place ") + colors.blue("google-authz.json") + colors.red(" file into ") + colors.blue("distributions/" + config.DISTRIBUTION) + colors.red(" folder. Press enter when done")
             }
           }
         }, function (err, result) {
-          if (!shell.test('-f', 'distributions/' + config.DISTRIBUTION + '/google-authz.json')) {
-            console.log('Need google-authz.json to use google groups authentication. Stopping build...');
-          } else {
-            var googleAuthz = JSON.parse(fs.readFileSync('distributions/' + config.DISTRIBUTION + '/google-authz.json'));
-            if (!googleAuthz.hasOwnProperty('cloudfront_authz_groups')) {
-              console.log('google-authz.json is missing cloudfront_authz_groups. Stopping build...');
-            } else {
-              shell.cp('./authz/google.groups-lookup.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
-              googleGroupsConfiguration();
-            }
-          }
+          config.SERVICE_ACCOUNT_EMAIL = result.SERVICE_ACCOUNT_EMAIL;
+          buildGoogle(false);
         });
         break;
       default:
@@ -312,21 +307,77 @@ function googleConfiguration() {
   });
 }
 
-function googleGroupsConfiguration() {
-  prompt.start();
-  prompt.message = colors.blue(">>>");
-  prompt.get({
-    properties: {
-      SERVICE_ACCOUNT_EMAIL: {
-        description: colors.red("Service Account Email"),
-        required: true,
-        default: R.pathOr('', ['SERVICE_ACCOUNT_EMAIL'], oldConfig)
-      }
+function genericGoogleConfiguration() {
+  config.PRIVATE_KEY = '${private-key}';
+  config.PUBLIC_KEY = '${public-key}';
+
+  config.DISCOVERY_DOCUMENT = 'https://accounts.google.com/.well-known/openid-configuration';
+  config.SESSION_DURATION = '${session-duration}'; // seconds
+
+  config.CALLBACK_PATH = '${callback-path}';
+  config.HOSTED_DOMAIN = '${hosted-domain}';
+
+  config.AUTH_REQUEST.client_id = '${client-id}';
+  config.AUTH_REQUEST.response_type = 'code';
+  config.AUTH_REQUEST.scope = 'openid email';
+  config.AUTH_REQUEST.redirect_uri = 'https://${domain-name}${callback-path}';
+
+  config.AUTH_REQUEST.hd = '${hosted-domain}';
+
+  config.TOKEN_REQUEST.client_id = '${client-id}';
+  config.TOKEN_REQUEST.client_secret = '${client-secret}';
+  config.TOKEN_REQUEST.redirect_uri = 'https://${domain-name}${callback-path}';
+  config.TOKEN_REQUEST.grant_type = 'authorization_code';
+
+  buildGoogle(true)
+}
+
+function buildGoogle(isGeneric) {
+    var files = ["config.json", "config.js", "index.js", "auth.js", "nonce.js"];
+
+    switch (config.AUTHZ) {
+      case 'hosted-domain':
+        config.SUBDIST = isGeneric && "hosted_domain";
+        shell.cp('./authz/google.hosted-domain.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
+        shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
+        break;
+
+      case 'email-lookup':
+        config.SUBDIST = isGeneric && "email_lookup";
+        shell.cp('./authz/google.json-email-lookup.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
+        if (isGeneric) {
+            config.JSON_EMAIL_LOOKUP = '${json-lookup-endpoint}';
+        }
+        break;
+
+      case 'groups-lookup':
+        config.SUBDIST = isGeneric && "groups_lookup";
+        if (isGeneric) {
+          // TODO: provide a base64 encoded method for user-supplied google-authz.json
+          console.log("generic builds for groups-lookup not yet supported");
+          return;
+        }
+        shell.cp('./authz/google.groups-lookup.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
+        if (!shell.test('-f', 'distributions/' + config.DISTRIBUTION + '/google-authz.json')) {
+          console.log('Need google-authz.json to use google groups authentication. Stopping build...');
+          return;
+        }
+        var googleAuthz = JSON.parse(fs.readFileSync('distributions/' + config.DISTRIBUTION + '/google-authz.json'));
+        if (!googleAuthz.hasOwnProperty('cloudfront_authz_groups')) {
+          console.log('google-authz.json is missing cloudfront_authz_groups. Stopping build...');
+          return;
+        }
+        files.push('google-authz.json');
+        break;
+
+      default:
+         console.log("Invalid Google auth type");
+         return;
     }
-  }, function (err, result) {
-    config.SERVICE_ACCOUNT_EMAIL = result.SERVICE_ACCOUNT_EMAIL;
-    writeConfig(config, zip, ['config.json', 'index.js', 'auth.js', 'google-authz.json', 'nonce.js']);
-  });
+  shell.cp('./authn/openid.index.js', './distributions/' + config.DISTRIBUTION + '/index.js');
+  shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
+  shell.cp(isGeneric ? './config/generic.config.js' : './config/custom.config.js', './distributions/' + config.DISTRIBUTION + '/config.js');
+  writeConfig(config, zip, files);
 }
 
 function oktaConfiguration() {
@@ -647,6 +698,10 @@ function buildRotateKeyPair() {
 
 function zip(files) {
   var filesString = '';
+  var zipName = config.DISTRIBUTION;
+  if (config.SUBDIST) {
+      zipName += '-'+config.SUBDIST;
+  }
   for (var i = 0; i < files.length; i++) {
     filesString += ' distributions/' + config.DISTRIBUTION + '/' + files[i] + ' ';
   }
@@ -654,9 +709,9 @@ function zip(files) {
     fs.unlinkSync('distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip');
   } catch (err) {
   }
-  shell.exec('zip -q distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip ' + 'package-lock.json package.json -r node_modules');
-  shell.exec('zip -q -r -j distributions/' + config.DISTRIBUTION + '/' + config.DISTRIBUTION + '.zip ' + filesString);
-  console.log(colors.green("Done... created Lambda function distributions/" + config.DISTRIBUTION + "/" + config.DISTRIBUTION + ".zip"));
+  shell.exec('zip -q distributions/' + config.DISTRIBUTION + '/' + zipName + '.zip ' + 'package-lock.json package.json -r node_modules');
+  shell.exec('zip -q -r -j distributions/' + config.DISTRIBUTION + '/' + zipName + '.zip ' + filesString);
+  console.log(colors.green("Done... created Lambda function distributions/" + config.DISTRIBUTION + "/" + zipName + ".zip"));
 }
 
 function writeConfig(result, callback, files) {

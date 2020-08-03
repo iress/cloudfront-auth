@@ -28,7 +28,7 @@ The build script prompts you for the required configuration parameters, which ar
 
 ### Generic Packages
 
-A generic package retrieves its configuration at runtime from the [AWS Systems Manager](https://aws.amazon.com/systems-manager/) Parameter Store and [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). Currently, support for this type of package has been added for OKTA Native only. To disable all issued JWTs, rotate the key pair using the Secrets Manager console.
+A generic package retrieves its configuration at runtime from the [AWS Systems Manager](https://aws.amazon.com/systems-manager/) Parameter Store and [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/). Currently, support for this type of package has been added for OKTA Native and Google only. To disable all issued JWTs, rotate the key pair using the Secrets Manager console.
 
 Generic packages are available for download from the Releases page of this GitHub repository. Or, to build a generic package yourself, execute:
 
@@ -39,7 +39,10 @@ Generic packages are available for download from the Releases page of this GitHu
 The supported values of `package` are:
 
 * `okta_native` - builds a generic Lambda package for OKTA Native authentication
+* `google hosted-domain` - builds a generic Lambda package for Google authentication, using hosted domain authentication
+* `google email-lookup` - builds a generic Lambda package for Google authentication, using JSON email lookup authentication
 * `rotate_key_pair` - builds a Lambda package for rotating the RSA keys in AWS Secrets Manager
+
 
 ## Identity Provider Guides
 
@@ -62,14 +65,28 @@ The supported values of `package` are:
     1. Create an **OAuth Client ID** from the **Create credentials** menu
     1. Select **Web application** for the Application type
     1. Under **Authorized redirect URIs**, enter your Cloudfront hostname with your preferred path value for the authorization callback. Example: `https://my-cloudfront-site.example.com/_callback`
-1. Execute `./build.sh` in the downloaded directory. NPM will run to download dependencies and a RSA key will be generated.
-1. Choose `Google` as the authorization method and enter the values for Client ID, Client Secret, Redirect URI, Hosted Domain and Session Duration
-1. Select the preferred authentication method
-    1. Hosted Domain (verify email's domain matches that of the given hosted domain)
-    1. JSON Email Lookup
-        1. Enter your JSON Email Lookup URL (example below) that consists of a single JSON array of emails to search through
-    1. Google Groups Lookup
-        1. [Use Google Groups to authorize users](https://github.com/Widen/cloudfront-auth/wiki/Google-Groups-Setup)
+1. Decide on whether you want to use a custom package or a generic package
+    * For a custom package:
+        1. Execute `./build.sh` in the downloaded directory. NPM will run to download dependencies and a RSA key will be generated.
+        1. Choose `Google` as the authorization method and enter the values for Client ID, Client Secret, Redirect URI, Hosted Domain and Session Duration
+        1. Select the preferred authentication method
+            1. Hosted Domain (verify email's domain matches that of the given hosted domain)
+            1. JSON Email Lookup
+                1. Enter your JSON Email Lookup URL (example below) that consists of a single JSON array of emails to search through
+            1. Google Groups Lookup
+                1. [Use Google Groups to authorize users](https://github.com/Widen/cloudfront-auth/wiki/Google-Groups-Setup)
+        1. Find the resulting `zip` file in your distribution folder
+    * For a generic package:
+        1. Create the parameters below in the AWS Systems Manager Parameter Store in the `us-east-1` region. Replace `{name}` with the name that you will give the Lambda authentication function.
+            * `/{name}/client-id` (The Oauth Client ID, above)
+            * `/{name}/client-secret` (The Oauth Client Secret, above; this can be stored as a SecureString in parameter store)
+            * `/{name}/domain-name` (e.g. `my-site.cloudfront.net`)
+            * `/{name}/hosted-domain` (if using the `google-hosted_domain` provider)
+            * `/{name}/json-lookup-endpoint` (if using the `google-email_lookup` provider)
+            * `/{name}/callback-path` (e.g. `/_callback`)
+            * `/{name}/session-duration` (in seconds)
+        1. Download the latest `google-hosted-domain.zip` or `google-email_lookup.zip` asset from the Releases page
+
 1. Upload the resulting `zip` file found in your distribution folder using the AWS Lambda console and jump to the [configuration step](#configure-lambda-and-cloudfront)
 
 ### Microsoft Azure
@@ -161,6 +178,7 @@ The supported values of `package` are:
             * `/{name}/pkce-code-verifier-length` (from 43 to 128)
         1. Download the latest `okta_native_*.zip` asset from the Releases page
 1. Upload the `zip` file using the AWS Lambda console and jump to the [configuration step](#configure-lambda-and-cloudfront)
+
 
 ## Configure Lambda and CloudFront
 
