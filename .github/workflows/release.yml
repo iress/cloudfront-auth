@@ -26,6 +26,10 @@ jobs:
 
       - name: Build okta_native
         run: npm run-script build-ci okta_native
+      - name: Build google-hosted_domain
+        run: npm run-script build-ci google hosted-domain
+      - name: Build google-email_lookup
+        run: npm run-script build-ci google email-lookup
       - name: Build rotate_key_pair
         run: npm run-script build-ci rotate_key_pair
 
@@ -48,6 +52,24 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./distributions/okta_native/okta_native.zip
           asset_name: okta_native_${{ steps.get_variables.outputs.tag_name }}.zip
+          asset_content_type: application/zip
+      - name: Upload google-hosted_domain
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./distributions/google/google-hosted_domain.zip
+          asset_name: google-hosted_domain_${{ steps.get_variables.outputs.tag_name }}.zip
+          asset_content_type: application/zip
+      - name: Upload google-email-lookup
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./distributions/google/google-email_lookup.zip
+          asset_name: google-email_lookup_${{ steps.get_variables.outputs.tag_name }}.zip
           asset_content_type: application/zip
       - name: Upload rotate_key_pair
         uses: actions/upload-release-asset@v1

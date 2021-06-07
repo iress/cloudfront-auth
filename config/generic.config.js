@@ -11,7 +11,7 @@ module.exports.getConfig = function (fileName, functionName, callback) {
 
   // Get parameters from SSM Parameter Store
   const ssm = new aws.SSM({ region: 'us-east-1' });
-  const getParametersByPathPromise = ssm.getParametersByPath({ Path: `/${name}` }).promise();
+  const getParametersByPathPromise = ssm.getParametersByPath({ Path: `/${name}`, WithDecryption: true }).promise();
 
   // Get key pair from Secrets Manager
   const secretsmanager = new aws.SecretsManager({ region: 'us-east-1' });
