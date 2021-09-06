@@ -10,7 +10,7 @@ The Terraform modules for each identity provider are in the [modules](./modules)
 
     ```hcl
     module "cloudfront_auth_okta_native" {
-      source = "./modules/okta_native"
+      source = "github.com/iress/cloudfront-auth//infra/terraform/modules/okta_native"
 
       # Lambda function version to deploy (see the Releases page of this GitHub repository)
       release_version = "v3.0.0"

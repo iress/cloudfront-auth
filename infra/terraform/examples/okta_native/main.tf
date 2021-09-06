@@ -1,5 +1,5 @@
 module "cloudfront_auth_okta_native" {
-  source = "../../modules/okta_native"
+  source = "github.com/iress/cloudfront-auth//infra/terraform/modules/okta_native"
 
   release_version = "v3.0.0"
   name            = "my-website-auth"
