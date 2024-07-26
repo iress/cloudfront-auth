@@ -8,7 +8,7 @@ Resources:
         Properties:
           CodeUri: distributions/{distribution_name}/{distribution_name}.zip
           Role: !GetAtt LambdaEdgeFunctionRole.Arn
-          Runtime: nodejs16.x
+          Runtime: nodejs20.x
           Handler: index.handler
           Timeout: 5
           AutoPublishAlias: LIVE
