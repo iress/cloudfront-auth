@@ -11,9 +11,9 @@ jobs:
         node-version: [20.x]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
 
@@ -24,7 +24,7 @@ jobs:
     - run: npm run-script build-ci rotate_key_pair
     - run: test -f distributions/rotate_key_pair/rotate_key_pair.zip
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: packages_${{ matrix.node-version }}
         path: distributions/*/*.zip
