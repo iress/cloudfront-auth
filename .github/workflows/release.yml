@@ -29,7 +29,7 @@ jobs:
         run: npm run-script build-ci rotate_key_pair
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ./distributions/okta_native/okta_native.zip

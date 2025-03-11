@@ -184,7 +184,7 @@ GitHub Actions automatically creates a new GitHub release when the repository ow
 e.g.
 
 ```sh
-git tag -a -m "Target AWS Lambda Node.js 14.x runtime" v3.0.0
+git tag -a -s -m "Target AWS Lambda Node.js 14.x runtime" v3.0.0
 git push origin v3.0.0
 ```
 
