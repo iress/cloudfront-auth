@@ -10,6 +10,8 @@ jobs:
   build:
     name: Upload Release Assets
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
 
       - name: Checkout code
@@ -25,6 +27,7 @@ jobs:
 
       - name: Build okta_native
         run: npm run-script build-ci okta_native
+
       - name: Build rotate_key_pair
         run: npm run-script build-ci rotate_key_pair
 
