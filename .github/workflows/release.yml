@@ -28,6 +28,9 @@ jobs:
       - name: Build okta_native
         run: npm run-script build-ci okta_native
 
+      - name: Build auth0
+        run: npm run-script build-ci auth0
+
       - name: Build rotate_key_pair
         run: npm run-script build-ci rotate_key_pair
 
@@ -36,4 +39,5 @@ jobs:
         with:
           files: |
             ./distributions/okta_native/okta_native.zip
+            ./distributions/auth0/auth0.zip
             ./distributions/rotate_key_pair/rotate_key_pair.zip

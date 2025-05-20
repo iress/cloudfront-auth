@@ -18,6 +18,9 @@ if (config.DISTRIBUTION) {
     case 'okta_native':
       genericOktaConfiguration();
       break;
+    case 'auth0':
+      genericAuth0Configuration();
+      break;
     case 'rotate_key_pair':
       buildRotateKeyPair();
       break;
@@ -565,16 +568,44 @@ function auth0Configuration() {
     config.TOKEN_REQUEST.redirect_uri = result.REDIRECT_URI;
     config.TOKEN_REQUEST.grant_type = 'authorization_code';
 
-    config.AUTHZ = "AUTH0";
-
-    shell.cp('./authn/openid.index.js', './distributions/' + config.DISTRIBUTION + '/index.js');
-    shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
-
-    fs.writeFileSync('distributions/' + config.DISTRIBUTION + '/config.json', JSON.stringify(result, null, 4));
-
-    shell.cp('./authz/auth0.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
-    writeConfig(config, zip, ['config.json', 'index.js', 'auth.js', 'nonce.js']);
+    buildAuth0();
   });
+}
+
+function genericAuth0Configuration() {
+  config.PRIVATE_KEY = '${private-key}';
+  config.PUBLIC_KEY = '${public-key}';
+
+  config.DISCOVERY_DOCUMENT = '${base-url}/.well-known/openid-configuration';
+  config.SESSION_DURATION = '${session-duration}';
+
+  config.BASE_URL = '${base-url}';
+  config.CALLBACK_PATH = '${callback-path}';
+  config.LOGOUT_PATH = '${logout-path}';
+
+  config.AUTH_REQUEST.client_id = '${client-id}';
+  config.AUTH_REQUEST.response_type = 'code';
+  config.AUTH_REQUEST.scope = '${scope}';
+  config.AUTH_REQUEST.redirect_uri = 'https://${domain-name}${callback-path}';
+
+  config.TOKEN_REQUEST.client_id = '${client-id}';
+  config.TOKEN_REQUEST.redirect_uri = 'https://${domain-name}${callback-path}';
+  config.TOKEN_REQUEST.grant_type = 'authorization_code';
+  config.TOKEN_REQUEST.client_secret = '${client-secret}';
+
+  buildAuth0(true);
+}
+
+function buildAuth0(isGeneric) {
+  config.AUTHZ = "AUTH0";
+
+  shell.cp('./authn/openid.index.js', './distributions/' + config.DISTRIBUTION + '/index.js');
+  shell.cp('./nonce.js', './distributions/' + config.DISTRIBUTION + '/nonce.js');
+
+  shell.cp(isGeneric ? './config/generic.config.js' : './config/custom.config.js', './distributions/' + config.DISTRIBUTION + '/config.js');
+
+  shell.cp('./authz/auth0.js', './distributions/' + config.DISTRIBUTION + '/auth.js');
+  writeConfig(config, zip, ['config.json', 'config.js', 'index.js', 'auth.js', 'nonce.js']);
 }
 
 // Centrify configuration

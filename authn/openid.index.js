@@ -5,6 +5,7 @@ const cookie = require('cookie');
 const jwkToPem = require('jwk-to-pem');
 const auth = require('./auth.js');
 const nonce = require('./nonce.js');
+const cfg = require('./config.js');
 const axios = require('axios');
 const url = require('url');
 const entities = require('html-entities');
@@ -15,40 +16,47 @@ var config;
 
 exports.handler = (event, context, callback) => {
   if (typeof jwks == 'undefined' || typeof discoveryDocument == 'undefined' || typeof config == 'undefined') {
-    config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-
-    // Get Discovery Document data
-    console.log("Get discovery document data");
-    axios.get(config.DISCOVERY_DOCUMENT)
-      .then(function(response) {
-        console.log(response);
-
-        // Get jwks from discovery document url
-        console.log("Get jwks from discovery document");
-        discoveryDocument = response.data;
-        if (discoveryDocument.hasOwnProperty('jwks_uri')) {
-
-          // Get public key and verify JWT
-          axios.get(discoveryDocument.jwks_uri)
-            .then(function(response) {
-              console.log(response);
-              jwks = response.data;
-
-              // Callback to main function
-              mainProcess(event, context, callback);
-            })
-            .catch(function(error) {
-              console.log("Internal server error: " + error.message);
-              internalServerError(callback);
-            });
-        } else {
-          console.log("Internal server error: Unable to find JWK in discovery document");
-          internalServerError(callback);
-        }
-      })
-      .catch(function(error) {
+    cfg.getConfig('config.json', context.functionName, function(error, result) {
+      if (error) {
         console.log("Internal server error: " + error.message);
         internalServerError(callback);
+      } else {
+        config = result;
+
+        // Get Discovery Document data
+        console.log("Get discovery document data");
+        axios.get(config.DISCOVERY_DOCUMENT)
+          .then(function(response) {
+            console.log(response);
+
+            // Get jwks from discovery document url
+            console.log("Get jwks from discovery document");
+            discoveryDocument = response.data;
+            if (discoveryDocument.hasOwnProperty('jwks_uri')) {
+
+              // Get public key and verify JWT
+              axios.get(discoveryDocument.jwks_uri)
+                .then(function(response) {
+                  console.log(response);
+                  jwks = response.data;
+
+                  // Callback to main function
+                  mainProcess(event, context, callback);
+                })
+                .catch(function(error) {
+                  console.log("Internal server error: " + error.message);
+                  internalServerError(callback);
+                });
+            } else {
+              console.log("Internal server error: Unable to find JWK in discovery document");
+              internalServerError(callback);
+            }
+          })
+          .catch(function(error) {
+            console.log("Internal server error: " + error.message);
+            internalServerError(callback);
+          });
+        }
       });
   } else {
     mainProcess(event, context, callback);
