@@ -29,6 +29,7 @@
     "url": "^0.11.0"
   },
   "devDependencies": {
+    "aws-sdk-client-mock": "^4.1.0",
     "aws-sdk-mock": "^5.8.0",
     "mocha": "^9.2.2",
     "sinon": "^9.0.2"
