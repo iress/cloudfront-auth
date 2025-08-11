@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.x.x",
+    "@aws-sdk/client-secrets-manager": "^3.x.x",
     "axios": "^0.21.1",
     "node-rsa": "^0.4.2",
     "prompt": "^1.0.0",
