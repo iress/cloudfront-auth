@@ -1,29 +1,42 @@
 const fsPromises = require('fs').promises;
-const aws = require('aws-sdk');
+const { SSMClient, GetParametersByPathCommand } = require('@aws-sdk/client-ssm');
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const fillTemplate = require('es6-dynamic-template');
 
-module.exports.getConfig = function (fileName, functionName, callback) {
-  // Remove the 'us-east-1.' prefix that exists on Lambda@Edge replicas
-  const name = functionName.replace(/^us-east-1./, '');
+// Convert the function to an async function
+module.exports.getConfig = async function (fileName, functionName) {
+  try {
+    // Remove the 'us-east-1.' prefix that exists on Lambda@Edge replicas
+    const name = functionName.replace(/^us-east-1./, '');
 
-  // Read config file
-  const readFilePromise = fsPromises.readFile(fileName, 'utf8');
+    // Instantiate clients
+    const ssmClient = new SSMClient({ region: 'us-east-1' });
+    const secretsManagerClient = new SecretsManagerClient({ region: 'us-east-1' });
 
-  // Get parameters from SSM Parameter Store
-  const ssm = new aws.SSM({ region: 'us-east-1' });
-  const getParametersByPathPromise = ssm.getParametersByPath({ Path: `/${name}` }).promise();
+    // Define promises for all async operations
+    const readFilePromise = fsPromises.readFile(fileName, 'utf8');
+    // Get parameters from SSM Parameter Store
+    const getParametersByPathPromise = ssmClient.send(
+      new GetParametersByPathCommand({ Path: `/${name}` })
+    );
 
-  // Get key pair from Secrets Manager
-  const secretsmanager = new aws.SecretsManager({ region: 'us-east-1' });
-  const getSecretValuePromise = secretsmanager.getSecretValue({ SecretId: `${name}/key-pair` }).promise();
+    // Get key pair from Secrets Manager
+    const getSecretValuePromise = secretsManagerClient.send(
+      new GetSecretValueCommand({ SecretId: `${name}/key-pair` })
+    );
 
-  Promise.all([readFilePromise, getParametersByPathPromise, getSecretValuePromise]).then(function (values) {
-    const template = values[0];
-    const ssmParameters = values[1].Parameters;
-    const secretString = values[2].SecretString;
+    // Await all promises concurrently
+    const [template, ssmResponse, secretResponse] = await Promise.all([
+      readFilePromise,
+      getParametersByPathPromise,
+      getSecretValuePromise,
+    ]);
+
+    const ssmParameters = ssmResponse.Parameters;
+    const secretString = secretResponse.SecretString;
 
     // Flatten parameters into name-value pairs
-    const parameters = ssmParameters.reduce(function (map, obj) {
+    const parameters = ssmParameters.reduce((map, obj) => {
       map[obj.Name.slice(name.length + 2)] = obj.Value;
       return map;
     }, {});
@@ -36,8 +49,11 @@ module.exports.getConfig = function (fileName, functionName, callback) {
       typeof value === 'string' ? fillTemplate(value, { ...parameters, ...secrets }) : value
     );
 
-    callback(null, config);
-  }).catch(function (err) {
-    callback(err);
-  });
+    // Return the result directly. The caller will use .then() or await.
+    return config;
+  } catch (err) {
+    // Let the calling function handle the error
+    console.error("Error fetching configuration:", err);
+    throw err;
+  }
 };
