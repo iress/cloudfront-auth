@@ -55,7 +55,7 @@ exports.handler = (event, context, callback) => {
             console.log("Internal server error: " + error.message);
             internalServerError(callback);
           });
-	  })
+      })
       .catch(error => {
         console.log("Internal server error: " + error.message);
         internalServerError(callback);
