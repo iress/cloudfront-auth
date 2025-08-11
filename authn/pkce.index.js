@@ -16,11 +16,10 @@ var config;
 
 exports.handler = (event, context, callback) => {
   if (typeof jwks == 'undefined' || typeof discoveryDocument == 'undefined' || typeof config == 'undefined') {
-    cfg.getConfig('config.json', context.functionName, function(error, result) {
-      if (error) {
-        console.log("Internal server error: " + error.message);
-        internalServerError(callback);
-      } else {
+	  
+	  
+    cfg.getConfig('config.json', context.functionName)
+      .then(result => {
         config = result;
 
         // Get Discovery Document data
@@ -56,7 +55,10 @@ exports.handler = (event, context, callback) => {
             console.log("Internal server error: " + error.message);
             internalServerError(callback);
           });
-      }
+	  })
+      .catch(error => {
+        console.log("Internal server error: " + error.message);
+        internalServerError(callback);
     });
   } else {
     mainProcess(event, context, callback);
