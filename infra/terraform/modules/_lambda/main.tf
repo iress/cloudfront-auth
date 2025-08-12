@@ -10,7 +10,7 @@ resource "null_resource" "download" {
   }
 
   provisioner "local-exec" {
-    command = "test -f ${local.package_directory}/${local.package_filename} || (mkdir -p ${local.package_directory} && wget -P ${local.package_directory} ${var.package_url})"
+    command = "mkdir -p ${local.package_directory} && wget --no-clobber -P ${local.package_directory} ${var.package_url}"
   }
 }
 
