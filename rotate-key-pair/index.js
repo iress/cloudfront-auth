@@ -1,7 +1,7 @@
 const { generateKeyPairSync } = require('crypto');
-const aws = require('aws-sdk');
+const { SecretsManagerClient, PutSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 
-exports.handler = (event) => {
+exports.handler = async (event) => {
   if (event.Step == "createSecret") {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
       modulusLength: 4096,
@@ -15,21 +15,21 @@ exports.handler = (event) => {
       }
     });
 
-    const secretsmanager = new aws.SecretsManager({ region: 'us-east-1' });
+    const secretsManagerClient = new SecretsManagerClient({ region: 'us-east-1' });
 
-    const params = {
+    const params = new PutSecretValueCommand({
       SecretId: event.SecretId,
       ClientRequestToken: event.ClientRequestToken,
       SecretString: JSON.stringify({ 'private-key': privateKey, 'public-key': publicKey })
-    };
-
-    secretsmanager.putSecretValue(params, function (err, data) {
-      if (err) {
-        console.log(`Failed to rotate key pair for secret ${event.SecretId}`);
-        console.log(err);
-      } else {
-        console.log(`Successfully rotated key pair for secret ${event.SecretId}`);
-      }
     });
+
+    try {
+      await secretsManagerClient.send(params);
+      console.log(`Successfully rotated key pair for secret ${event.SecretId}`);
+    } catch (err) {
+      console.log(`Failed to rotate key pair for secret ${event.SecretId}`);
+      console.log(err);
+      throw err;
+    }
   }
 };
