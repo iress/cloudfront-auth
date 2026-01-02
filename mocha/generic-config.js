@@ -8,12 +8,10 @@ describe('Generic configuration', function () {
   const ssmMock = mockClient(SSMClient);
   const secretsManagerMock = mockClient(SecretsManagerClient);
 
-  afterEach(() => {
+  beforeEach(() => {
     ssmMock.reset();
     secretsManagerMock.reset();
-  });
 
-  it('should return an object that has placeholders replaced with values from Parameter Store and Secrets Manager', async function () {
     ssmMock.on(GetParametersByPathCommand).resolves({
       Parameters: [
         {
@@ -30,7 +28,9 @@ describe('Generic configuration', function () {
     secretsManagerMock.on(GetSecretValueCommand).resolves({
       SecretString: JSON.stringify({ 'private-key': 'my-private-key', 'public-key': 'my-public-key' })
     });
+  });
 
+  it('should return an object that has placeholders replaced with values from Parameter Store and Secrets Manager', async function () {
     const config = await genericConfig.getConfig('./mocha/generic-config.json', 'us-east-1.my-website-auth');
     assert.equal(config.AUTH_REQUEST.redirect_uri, 'https://my-website.com/_callback');
     assert.equal(config.PRIVATE_KEY, 'my-private-key');

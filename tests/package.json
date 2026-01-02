@@ -12,7 +12,7 @@
     "aws-sdk": "^2.207.0",
     "dateformat": "^3.0.3",
     "generate-password": "^1.4.1",
-    "http": "0.0.0",
+    "http": "0.0.1-security",
     "json-beautify": "^1.0.1",
     "ngrok": "^2.3.0",
     "opn": "^5.2.0",

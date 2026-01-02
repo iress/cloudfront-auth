@@ -1,16 +1,19 @@
 const rotateKeyPair = require('../rotate-key-pair/index.js');
 const assert = require('assert');
-const AWS = require('aws-sdk-mock');
-const sinon = require('sinon');
+const { SecretsManagerClient, PutSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+const { mockClient } = require('aws-sdk-client-mock');
 
 describe('Rotate key pair', function () {
   describe('handler', function () {
+    const secretsManagerMock = mockClient(SecretsManagerClient);
 
-    it('should put secret value when step is createSecret', function () {
+    beforeEach(function () {
+      secretsManagerMock.reset();
+    });
+
+    it('should put secret value when step is createSecret', async function () {
       this.timeout(30000);
-
-      const putSecretValueSpy = sinon.spy();
-      AWS.mock('SecretsManager', 'putSecretValue', putSecretValueSpy);
+      secretsManagerMock.on(PutSecretValueCommand).resolves({});
 
       // Call Lambda function handler
       const event = {
@@ -18,27 +21,23 @@ describe('Rotate key pair', function () {
         SecretId: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:my-website-auth/key-pair-ABCDEF',
         ClientRequestToken: '123e4567-e89b-12d3-a456-426614174000'
       };
-      rotateKeyPair.handler(event);
+      await rotateKeyPair.handler(event);
 
-      // Verify that putSecretValue was called once with the same SecretId and ClientRequestToken
-      const expectedParams = {
-        SecretId: event.SecretId,
-        ClientRequestToken: event.ClientRequestToken
-      };
-      sinon.assert.calledOnce(putSecretValueSpy);
-      sinon.assert.calledWithMatch(putSecretValueSpy, expectedParams);
+      // Verify that send was called once with the expected payload
+      const calls = secretsManagerMock.commandCalls(PutSecretValueCommand);
+      assert.strictEqual(calls.length, 1);
+      const sentCommand = calls[0].firstArg;
+      assert.strictEqual(sentCommand.input.SecretId, event.SecretId);
+      assert.strictEqual(sentCommand.input.ClientRequestToken, event.ClientRequestToken);
 
-      // Verify that putSecretValue was called once with an RSA key pair as the SecretString
-      const secret = JSON.parse(putSecretValueSpy.getCall(0).args[0].SecretString);
+      // Verify that send was called once with an RSA key pair as the SecretString
+      const secret = JSON.parse(sentCommand.input.SecretString);
       assert(/^-----BEGIN RSA PRIVATE KEY-----\n[\s\S]*?-----END RSA PRIVATE KEY-----\n$/.test(secret['private-key']));
       assert(/^-----BEGIN PUBLIC KEY-----\n[\s\S]*?-----END PUBLIC KEY-----\n$/.test(secret['public-key']));
-
-      AWS.restore('SecretsManager');
     });
 
-    it('should not put secret value when step is not createSecret', function () {
-      var putSecretValueSpy = sinon.spy();
-      AWS.mock('SecretsManager', 'putSecretValue', putSecretValueSpy);
+    it('should not put secret value when step is not createSecret', async function () {
+      secretsManagerMock.on(PutSecretValueCommand).resolves({});
 
       // Call Lambda function handler
       const event = {
@@ -46,12 +45,11 @@ describe('Rotate key pair', function () {
         SecretId: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:my-website-auth/key-pair-ABCDEF',
         ClientRequestToken: '123e4567-e89b-12d3-a456-426614174000'
       };
-      rotateKeyPair.handler(event);
+      await rotateKeyPair.handler(event);
 
-      // Verify that putSecretValue was not called
-      sinon.assert.notCalled(putSecretValueSpy);
-
-      AWS.restore('SecretsManager');
+      // Verify that send was not called
+      const calls = secretsManagerMock.commandCalls(PutSecretValueCommand);
+      assert.strictEqual(calls.length, 0);
     });
 
   });
