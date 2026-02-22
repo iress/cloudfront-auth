@@ -1,6 +1,6 @@
 # Terraform Modules for CloudFront Authentication
 
-This directory contains the _Terraform_ configuration for adding authentication to a CloudFront distribution. Currently only OKTA Native authentication is supported.
+This directory contains the _Terraform_ configuration for adding authentication to a CloudFront distribution. Currently only OKTA Native and Auth0 authentication is supported.
 
 ## Usage
 

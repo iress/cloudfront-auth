@@ -177,6 +177,7 @@ If you need to build a generic package yourself, execute:
 The supported values of `package` are:
 
 * `okta_native` - builds a generic Lambda package for OKTA Native authentication
+* `auth0` - builds a generic Lambda package for Auth0 authentication
 * `rotate_key_pair` - builds a Lambda package for rotating the RSA keys in AWS Secrets Manager
 
 GitHub Actions automatically creates a new GitHub release when the repository owner pushes a tag that begins with `v`.

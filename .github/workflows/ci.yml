@@ -21,6 +21,8 @@ jobs:
 
     - run: npm run-script build-ci okta_native
     - run: test -f distributions/okta_native/okta_native.zip
+    - run: npm run-script build-ci auth0
+    - run: test -f distributions/auth0/auth0.zip
     - run: npm run-script build-ci rotate_key_pair
     - run: test -f distributions/rotate_key_pair/rotate_key_pair.zip
 
