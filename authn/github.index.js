@@ -7,11 +7,21 @@ const auth = require('./auth.js');
 const axios = require('axios');
 var config;
 
-exports.handler = (event, context, callback) => {
-  if (typeof config == 'undefined') {
-    config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-  }
-  mainProcess(event, context, callback);
+exports.handler = (event, context) => {
+  return new Promise((resolve, reject) => {
+    const callback = (error, response) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(response);
+      }
+    };
+
+    if (typeof config == 'undefined') {
+      config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+    }
+    mainProcess(event, context, callback);
+  });
 };
 
 function mainProcess(event, context, callback) {
