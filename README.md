@@ -163,7 +163,7 @@ Detailed instructions on testing your function can be found [in the Wiki](https:
 ## Build Requirements
 
 * [npm](https://www.npmjs.com/) ^7.20.0
-* [node](https://nodejs.org/en/) ^20.0
+* [node](https://nodejs.org/en/) ^24.0
 * [openssl](https://www.openssl.org)
 
 ## Building Generic Packages
@@ -184,8 +184,8 @@ GitHub Actions automatically creates a new GitHub release when the repository ow
 e.g.
 
 ```sh
-git tag -a -s -m "Target AWS Lambda Node.js 14.x runtime" v3.0.0
-git push origin v3.0.0
+git tag -a -s -m "Target AWS Lambda Node.js 24.x runtime" v6.0.0
+git push origin v6.0.0
 ```
 
 ## Contributing

@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Upload Release Assets
-    runs-on: ubuntu-latest
+    runs-on: grouptech-actions-runners
     permissions:
       contents: write
     steps:
