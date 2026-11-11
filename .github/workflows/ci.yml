@@ -3,8 +3,8 @@ on: push
 
 jobs:
   build:
-
-    runs-on: grouptech-actions-runners
+    runs-on:
+      group: grouptech-actions-runners
 
     strategy:
       matrix:

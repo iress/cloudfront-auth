@@ -9,11 +9,11 @@ on:
 jobs:
   build:
     name: Upload Release Assets
-    runs-on: grouptech-actions-runners
+    runs-on: 
+      group: grouptech-actions-runners
     permissions:
       contents: write
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
