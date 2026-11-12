@@ -10,7 +10,7 @@ jobs:
   build:
     name: Upload Release Assets
     runs-on: 
-      group: grouptech-actions-runners
+      group: iress-actions-runners
     permissions:
       contents: write
     steps:
